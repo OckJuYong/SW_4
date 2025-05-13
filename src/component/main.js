@@ -1,48 +1,74 @@
-import React, { Component } from "react";
+import React, { Component } from 'react';
 import axios from "axios";
 
-class Main extends Component {
-  componentDidMount() {
-    this.fetchLocation();
+class Test2 extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      location: null,
+      loading: false,
+      error: null,
+      imageFile: null
+    };
   }
 
-  fetchLocation = async () => {
-    const token = localStorage.getItem("token");
-    const userId = 1; // 고정된 유저 ID
-    const cropId = 3; // 임시 crop ID
+  handleFileChange = (e) => {
+    this.setState({ imageFile: e.target.files[0] });
+  };
 
-    // 예시 이미지 Blob 생성 (실제로는 File 혹은 Blob 객체를 사용)
-    const dummyImage = new Blob(["image data"], { type: "image/png" });
+  handleUpload = async () => {
+    const { imageFile } = this.state;
+    if (!imageFile) {
+      this.setState({ error: "이미지를 선택해주세요." });
+      return;
+    }
+
+    this.setState({ loading: true, error: null });
 
     const formData = new FormData();
-    formData.append("image", dummyImage); // 이미지 파일 첨부
+    formData.append("image", imageFile);
+    formData.append("userId", 1); // 고정된 ID
 
     try {
+      console.log(imageFile);
+
       const response = await axios.post(
-        `http://43.201.122.113:8081/api/farm/ai-recommendation?userId=${userId}&cropId=${cropId}`,
+        "https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/1/upload-and-translate",
         formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+            "Content-Type": "multipart/form-data"
+          }
         }
       );
-
-      console.log("✅ 이미지 전송 완료:", formData.get("image"));
-      console.log("📦 서버 응답:", response.data);
+      console.log(response.data);
+      this.setState({ location: response.data, loading: false });
     } catch (error) {
-      console.error("❌ 전송 실패:", error);
+      console.error(error);
+      this.setState({ error: "업로드 실패", loading: false });
     }
   };
 
   render() {
+    const { location, loading, error } = this.state;
+
     return (
       <div>
-        <h3>AI 추천 요청 중...</h3>
+        <h2>이미지 업로드 및 분석</h2>
+        <input type="file" accept="image/*" onChange={this.handleFileChange} />
+        <button onClick={this.handleUpload}>업로드</button>
+
+        {loading && <p>로딩 중...</p>}
+        {error && <p style={{ color: "red" }}>에러: {error}</p>}
+        {location && (
+          <div>
+            <h3>응답 결과:</h3>
+            <pre>{JSON.stringify(location, null, 2)}</pre>
+          </div>
+        )}
       </div>
     );
   }
 }
 
-export default Main;
+export default Test2;
