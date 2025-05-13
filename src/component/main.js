@@ -30,6 +30,7 @@ class Test2 extends Component {
     formData.append("userId", 1); // 고정된 ID
 
     try {
+      console.log(imageFile);
       const response = await axios.post(
         "https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/1/upload-and-translate",
         formData,
