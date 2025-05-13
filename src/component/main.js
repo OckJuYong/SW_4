@@ -2,14 +2,31 @@ import React, { useState } from "react";
 import axios from "axios";
 
 const Main = () => {
-  const [imageUrl, setImageUrl] = useState("");
+  const [file, setFile] = useState(null);
   const [result, setResult] = useState("");
 
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
   const handleSubmit = async () => {
+    if (!file) {
+      setResult("이미지를 선택해주세요.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file); // 서버가 'image'라는 필드로 받을 것으로 가정
+
     try {
       const response = await axios.post(
         "https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/1/upload-and-translate",
-        { imageUrl: imageUrl } // 이미지 URL만 포함
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
       setResult(JSON.stringify(response.data, null, 2));
     } catch (error) {
@@ -21,14 +38,10 @@ const Main = () => {
   return (
     <div>
       <h2>OCR 이미지 업로드</h2>
-      <input
-        type="text"
-        value={imageUrl}
-        onChange={(e) => setImageUrl(e.target.value)}
-        placeholder="이미지 URL 입력"
-        style={{ width: "300px", marginRight: "10px" }}
-      />
-      <button onClick={handleSubmit}>OCR 요청 보내기</button>
+      <input type="file" accept="image/*" onChange={handleFileChange} />
+      <button onClick={handleSubmit} style={{ marginLeft: "10px" }}>
+        OCR 요청 보내기
+      </button>
 
       <div style={{ marginTop: "20px" }}>
         <h3>결과</h3>
