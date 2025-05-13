@@ -12,6 +12,31 @@ class Test2 extends Component {
     };
   }
 
+  componentDidMount() {
+    this.fetchLocation();
+  }
+
+  fetchLocation = async () => {
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("id") || 1;
+
+    this.setState({ loading: true });
+
+    try {
+      const response = await axios.get(
+        `http://43.201.122.113:8081/api/farm/ai-recommendation?userId=${userId}&cropId=3`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      this.setState({ location: response.data, loading: false });
+    } catch (error) {
+      this.setState({ error: error.toString(), loading: false });
+    }
+  };
+
   handleFileChange = (e) => {
     this.setState({ imageFile: e.target.files[0] });
   };
@@ -27,11 +52,9 @@ class Test2 extends Component {
 
     const formData = new FormData();
     formData.append("image", imageFile);
-    formData.append("userId", 1); // 고정된 ID
+    formData.append("userId", "1"); // 문자열로 전달하는 게 안전
 
     try {
-      console.log(imageFile);
-
       const response = await axios.post(
         "https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/1/upload-and-translate",
         formData,
@@ -41,10 +64,8 @@ class Test2 extends Component {
           }
         }
       );
-      console.log(response.data);
       this.setState({ location: response.data, loading: false });
     } catch (error) {
-      console.error(error);
       this.setState({ error: "업로드 실패", loading: false });
     }
   };
