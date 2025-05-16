@@ -75,13 +75,13 @@ class Contract extends Component {
         }
     }
 
-    // 법률 정보 분석 요청
+    // 법률 정보 분석 요청 - 여기를 contracts로 수정
     analyzeLegalInfo = async (contractId) => {
         this.setState({ analysisLoading: true, analysisError: null, legalAnalysis: null });
         
         try {
             const response = await axios.post(
-                `https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/1/analyze`
+                `https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contracts/${contractId}/analyze`
             );
             
             this.setState({ 
@@ -91,7 +91,7 @@ class Contract extends Component {
         } catch (error) {
             console.error("법률 정보 분석 실패:", error);
             this.setState({ 
-                analysisError: `법률 정보 분석 실패: ${error.message}`, 
+                analysisError: `법률 정보 분석 실패: ${error.message} (${error.response?.status || '알 수 없는 오류'})`, 
                 analysisLoading: false
             });
         }
