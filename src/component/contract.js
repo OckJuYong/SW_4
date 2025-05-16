@@ -8,7 +8,11 @@ class Contract extends Component {
             memberId: 1, // 기본값 설정
             contracts: [],
             loading: false,
-            error: null
+            error: null,
+            showModal: false,
+            selectedContract: null,
+            detailLoading: false,
+            detailError: null
         };
     }
 
@@ -44,8 +48,94 @@ class Contract extends Component {
         }
     }
 
+    // 계약서 상세 정보 가져오기
+    fetchContractDetail = async (contractId) => {
+        this.setState({ detailLoading: true, detailError: null });
+        
+        try {
+            const response = await axios.get(
+                `https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/${contractId}`
+            );
+            
+            this.setState({ 
+                selectedContract: response.data, 
+                detailLoading: false,
+                showModal: true
+            });
+        } catch (error) {
+            console.error("계약서 상세 정보 가져오기 실패:", error);
+            this.setState({ 
+                detailError: `상세 정보 로드 실패: ${error.message}`, 
+                detailLoading: false,
+                showModal: true // 에러 메시지를 모달에 표시하기 위해 모달은 열어줌
+            });
+        }
+    }
+
+    // 모달 열기
+    openModal = (contract) => {
+        // 이미 기본 정보가 있으면 먼저 표시
+        this.setState({ 
+            selectedContract: contract, 
+            showModal: true 
+        });
+        
+        // 상세 정보 API 호출
+        this.fetchContractDetail(contract.contractId);
+    }
+
+    // 모달 닫기
+    closeModal = () => {
+        this.setState({ 
+            showModal: false, 
+            selectedContract: null,
+            detailError: null
+        });
+    }
+
     render() {
-        const { memberId, contracts, loading, error } = this.state;
+        const { 
+            memberId, 
+            contracts, 
+            loading, 
+            error, 
+            showModal, 
+            selectedContract, 
+            detailLoading, 
+            detailError 
+        } = this.state;
+
+        // 모달 스타일
+        const modalStyle = {
+            display: showModal ? 'block' : 'none',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            overflow: 'auto'
+        };
+
+        const modalContentStyle = {
+            backgroundColor: 'white',
+            margin: '50px auto',
+            padding: '20px',
+            border: '1px solid #888',
+            width: '80%',
+            maxWidth: '800px',
+            borderRadius: '5px',
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)'
+        };
+
+        const closeButtonStyle = {
+            color: '#aaa',
+            float: 'right',
+            fontSize: '28px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+        };
 
         return (
             <div style={{ padding: '20px' }}>
@@ -94,7 +184,13 @@ class Contract extends Component {
                                             <img 
                                                 src={contract.originalImageUrl} 
                                                 alt="원본 계약서" 
-                                                style={{ maxWidth: '100%', height: 'auto' }}
+                                                style={{ 
+                                                    maxWidth: '100%', 
+                                                    height: 'auto',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onClick={() => this.openModal(contract)}
+                                                title="클릭하여 상세 정보 보기"
                                             />
                                         ) : (
                                             <p>이미지가 없습니다</p>
@@ -106,19 +202,112 @@ class Contract extends Component {
                                             <img 
                                                 src={contract.translatedImageUrl} 
                                                 alt="번역된 계약서" 
-                                                style={{ maxWidth: '100%', height: 'auto' }}
+                                                style={{ 
+                                                    maxWidth: '100%', 
+                                                    height: 'auto',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onClick={() => this.openModal(contract)}
+                                                title="클릭하여 상세 정보 보기"
                                             />
                                         ) : (
                                             <p>번역된 이미지가 없습니다</p>
                                         )}
                                     </div>
                                 </div>
+                                <button 
+                                    onClick={() => this.openModal(contract)}
+                                    style={{ 
+                                        marginTop: '10px',
+                                        padding: '5px 10px', 
+                                        backgroundColor: '#2196F3', 
+                                        color: 'white', 
+                                        border: 'none', 
+                                        cursor: 'pointer' 
+                                    }}
+                                >
+                                    상세 정보 보기
+                                </button>
                             </div>
                         ))}
                     </div>
                 ) : !loading && (
                     <p>조회된 계약서가 없습니다. 조회하기 버튼을 클릭하여 데이터를 불러오세요.</p>
                 )}
+
+                {/* 모달 */}
+                <div style={modalStyle}>
+                    <div style={modalContentStyle}>
+                        <span 
+                            style={closeButtonStyle} 
+                            onClick={this.closeModal}
+                        >
+                            &times;
+                        </span>
+                        
+                        <h2>계약서 상세 정보</h2>
+                        
+                        {detailLoading && <p>상세 정보 로딩 중...</p>}
+                        
+                        {detailError && (
+                            <div style={{ color: 'red', marginBottom: '15px' }}>
+                                {detailError}
+                            </div>
+                        )}
+                        
+                        {selectedContract && (
+                            <div>
+                                <p><strong>계약서 ID:</strong> {selectedContract.contractId}</p>
+                                <p><strong>회원 ID:</strong> {selectedContract.memberId}</p>
+                                
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginTop: '20px' }}>
+                                    <div style={{ flex: 1, minWidth: '300px' }}>
+                                        <h3>원본 이미지</h3>
+                                        {selectedContract.originalImageUrl ? (
+                                            <img 
+                                                src={selectedContract.originalImageUrl} 
+                                                alt="원본 계약서" 
+                                                style={{ width: '100%', maxHeight: '500px', objectFit: 'contain' }}
+                                            />
+                                        ) : (
+                                            <p>원본 이미지가 없습니다</p>
+                                        )}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: '300px' }}>
+                                        <h3>번역된 이미지</h3>
+                                        {selectedContract.translatedImageUrl ? (
+                                            <img 
+                                                src={selectedContract.translatedImageUrl} 
+                                                alt="번역된 계약서" 
+                                                style={{ width: '100%', maxHeight: '500px', objectFit: 'contain' }}
+                                            />
+                                        ) : (
+                                            <p>번역된 이미지가 없습니다</p>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                {/* 여기에 API에서 반환되는 추가 정보들을 표시할 수 있습니다 */}
+                            </div>
+                        )}
+                        
+                        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                            <button 
+                                onClick={this.closeModal}
+                                style={{ 
+                                    padding: '8px 15px', 
+                                    backgroundColor: '#f44336', 
+                                    color: 'white', 
+                                    border: 'none', 
+                                    cursor: 'pointer',
+                                    borderRadius: '4px'
+                                }}
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
