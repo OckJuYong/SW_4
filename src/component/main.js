@@ -50,9 +50,9 @@ handleUpload = async () => {
 
   this.setState({ loading: true, error: null });
 
+  // 스웨거 문서에 따른 수정: 'file' 키로 이미지 전송
   const formData = new FormData();
-  // Key 없이 이미지 파일만 추가
-  formData.append("", imageFile);
+  formData.append("file", imageFile);
 
   try {
     const response = await axios.post(
@@ -66,7 +66,17 @@ handleUpload = async () => {
     );
     this.setState({ location: response.data, loading: false });
   } catch (error) {
-    this.setState({ error: "업로드 실패", loading: false });
+    console.error("업로드 실패:", error);
+    if (error.response) {
+      console.error("서버 응답:", error.response.data);
+      console.error("상태 코드:", error.response.status);
+      this.setState({ 
+        error: `업로드 실패 (${error.response.status}): ${JSON.stringify(error.response.data)}`, 
+        loading: false 
+      });
+    } else {
+      this.setState({ error: `업로드 실패: ${error.message}`, loading: false });
+    }
   }
 };
 
