@@ -41,34 +41,34 @@ class Test2 extends Component {
     this.setState({ imageFile: e.target.files[0] });
   };
 
-  handleUpload = async () => {
-    const { imageFile } = this.state;
-    if (!imageFile) {
-      this.setState({ error: "이미지를 선택해주세요." });
-      return;
-    }
+handleUpload = async () => {
+  const { imageFile } = this.state;
+  if (!imageFile) {
+    this.setState({ error: "이미지를 선택해주세요." });
+    return;
+  }
 
-    this.setState({ loading: true, error: null });
+  this.setState({ loading: true, error: null });
 
-    const formData = new FormData();
-    formData.append("image", imageFile);
-    formData.append("userId", "1"); // 문자열로 전달하는 게 안전
+  const formData = new FormData();
+  // Key 없이 이미지 파일만 추가
+  formData.append("", imageFile);
 
-    try {
-      const response = await axios.post(
-        "https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/1/upload-and-translate",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data"
-          }
+  try {
+    const response = await axios.post(
+      "https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/1/upload-and-translate",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data"
         }
-      );
-      this.setState({ location: response.data, loading: false });
-    } catch (error) {
-      this.setState({ error: "업로드 실패", loading: false });
-    }
-  };
+      }
+    );
+    this.setState({ location: response.data, loading: false });
+  } catch (error) {
+    this.setState({ error: "업로드 실패", loading: false });
+  }
+};
 
   render() {
     const { location, loading, error } = this.state;
