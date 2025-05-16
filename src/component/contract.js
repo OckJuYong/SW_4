@@ -15,7 +15,11 @@ class Contract extends Component {
             detailError: null,
             legalAnalysis: null,
             analysisLoading: false,
-            analysisError: null
+            analysisError: null,
+            showLawDetailModal: false,
+            selectedLawInfo: null,
+            lawDetailLoading: false,
+            lawDetailError: null
         };
     }
 
@@ -75,7 +79,7 @@ class Contract extends Component {
         }
     }
 
-    // 법률 정보 분석 요청 - 여기를 contracts로 수정
+    // 법률 정보 분석 요청
     analyzeLegalInfo = async (contractId) => {
         this.setState({ analysisLoading: true, analysisError: null, legalAnalysis: null });
         
@@ -97,7 +101,31 @@ class Contract extends Component {
         }
     }
 
-    // 모달 열기
+    // 법률 정보 상세 조회
+    fetchLawDetail = async (lawInfoId) => {
+        this.setState({ lawDetailLoading: true, lawDetailError: null });
+        
+        try {
+            const response = await axios.get(
+                `https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/lawinfo/${lawInfoId}`
+            );
+            
+            this.setState({ 
+                selectedLawInfo: response.data, 
+                lawDetailLoading: false,
+                showLawDetailModal: true
+            });
+        } catch (error) {
+            console.error("법률 정보 상세 조회 실패:", error);
+            this.setState({ 
+                lawDetailError: `법률 정보 상세 조회 실패: ${error.message} (${error.response?.status || '알 수 없는 오류'})`, 
+                lawDetailLoading: false,
+                showLawDetailModal: true // 에러 메시지를 모달에 표시하기 위해 모달은 열어줌
+            });
+        }
+    }
+
+    // 계약서 상세 모달 열기
     openModal = (contract) => {
         // 이미 기본 정보가 있으면 먼저 표시
         this.setState({ 
@@ -111,7 +139,7 @@ class Contract extends Component {
         this.fetchContractDetail(contract.contractId);
     }
 
-    // 모달 닫기
+    // 계약서 상세 모달 닫기
     closeModal = () => {
         this.setState({ 
             showModal: false, 
@@ -119,6 +147,20 @@ class Contract extends Component {
             detailError: null,
             legalAnalysis: null,
             analysisError: null
+        });
+    }
+
+    // 법률 정보 상세 모달 열기
+    openLawDetailModal = (lawInfoId) => {
+        this.fetchLawDetail(lawInfoId);
+    }
+
+    // 법률 정보 상세 모달 닫기
+    closeLawDetailModal = () => {
+        this.setState({
+            showLawDetailModal: false,
+            selectedLawInfo: null,
+            lawDetailError: null
         });
     }
 
@@ -134,7 +176,11 @@ class Contract extends Component {
             detailError,
             legalAnalysis,
             analysisLoading,
-            analysisError
+            analysisError,
+            showLawDetailModal,
+            selectedLawInfo,
+            lawDetailLoading,
+            lawDetailError
         } = this.state;
 
         // 모달 스타일
@@ -160,6 +206,32 @@ class Contract extends Component {
             borderRadius: '5px',
             boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
             maxHeight: '80vh',
+            overflow: 'auto'
+        };
+
+        // 법률 정보 상세 모달 스타일
+        const lawDetailModalStyle = {
+            display: showLawDetailModal ? 'block' : 'none',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1100, // 계약서 모달보다 위에 표시
+            overflow: 'auto'
+        };
+
+        const lawDetailContentStyle = {
+            backgroundColor: 'white',
+            margin: '100px auto',
+            padding: '20px',
+            border: '1px solid #888',
+            width: '70%',
+            maxWidth: '800px',
+            borderRadius: '5px',
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            maxHeight: '70vh',
             overflow: 'auto'
         };
 
@@ -287,7 +359,7 @@ class Contract extends Component {
                     <p>조회된 계약서가 없습니다. 조회하기 버튼을 클릭하여 데이터를 불러오세요.</p>
                 )}
 
-                {/* 모달 */}
+                {/* 계약서 상세 모달 */}
                 <div style={modalStyle}>
                     <div style={modalContentStyle}>
                         <span 
@@ -465,6 +537,20 @@ class Contract extends Component {
                                                                         </a>
                                                                     </p>
                                                                 )}
+                                                                <button 
+                                                                    onClick={() => this.openLawDetailModal(law.lawInfoId)}
+                                                                    style={{ 
+                                                                        marginTop: '10px',
+                                                                        padding: '5px 10px', 
+                                                                        backgroundColor: '#673AB7', 
+                                                                        color: 'white', 
+                                                                        border: 'none', 
+                                                                        cursor: 'pointer',
+                                                                        borderRadius: '4px'
+                                                                    }}
+                                                                >
+                                                                    법률 상세 정보 보기
+                                                                </button>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -481,6 +567,125 @@ class Contract extends Component {
                         <div style={{ marginTop: '20px', textAlign: 'center' }}>
                             <button 
                                 onClick={this.closeModal}
+                                style={{ 
+                                    padding: '8px 15px', 
+                                    backgroundColor: '#f44336', 
+                                    color: 'white', 
+                                    border: 'none', 
+                                    cursor: 'pointer',
+                                    borderRadius: '4px'
+                                }}
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 법률 정보 상세 모달 */}
+                <div style={lawDetailModalStyle}>
+                    <div style={lawDetailContentStyle}>
+                        <span 
+                            style={closeButtonStyle} 
+                            onClick={this.closeLawDetailModal}
+                        >
+                            &times;
+                        </span>
+                        
+                        <h2>법률 정보 상세</h2>
+                        
+                        {lawDetailLoading && <p>법률 정보 로딩 중...</p>}
+                        
+                        {lawDetailError && (
+                            <div style={{ color: 'red', marginBottom: '15px' }}>
+                                {lawDetailError}
+                            </div>
+                        )}
+                        
+                        {selectedLawInfo && (
+                            <div style={{ marginTop: '20px' }}>
+                                <h3>{selectedLawInfo.lawName || '제목 없음'}</h3>
+                                
+                                {selectedLawInfo.translatedLawName && (
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <h4>번역된 법률명</h4>
+                                        <p>{selectedLawInfo.translatedLawName}</p>
+                                    </div>
+                                )}
+                                
+                                {selectedLawInfo.translatedSummary && (
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <h4>법률 요약</h4>
+                                        <p>{selectedLawInfo.translatedSummary}</p>
+                                    </div>
+                                )}
+                                
+                                {selectedLawInfo.fullText && (
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <h4>전체 내용</h4>
+                                        <div style={{ 
+                                            padding: '15px', 
+                                            backgroundColor: '#f9f9f9', 
+                                            border: '1px solid #ddd',
+                                            borderRadius: '5px',
+                                            maxHeight: '300px',
+                                            overflow: 'auto'
+                                        }}>
+                                            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                                                {selectedLawInfo.fullText}
+                                            </pre>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {selectedLawInfo.translatedFullText && (
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <h4>번역된 전체 내용</h4>
+                                        <div style={{ 
+                                            padding: '15px', 
+                                            backgroundColor: '#f9f9f9', 
+                                            border: '1px solid #ddd',
+                                            borderRadius: '5px',
+                                            maxHeight: '300px',
+                                            overflow: 'auto'
+                                        }}>
+                                            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                                                {selectedLawInfo.translatedFullText}
+                                            </pre>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {selectedLawInfo.referenceNumber && (
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <h4>참조 번호</h4>
+                                        <p>{selectedLawInfo.referenceNumber}</p>
+                                    </div>
+                                )}
+                                
+                                {selectedLawInfo.sourceLink && (
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <h4>출처</h4>
+                                        <p>
+                                            <a 
+                                                href={selectedLawInfo.sourceLink} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                style={{ color: '#1976D2' }}
+                                            >
+                                                {selectedLawInfo.sourceLink}
+                                            </a>
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                {/* 추가 정보가 있다면 여기에 표시 */}
+                            </div>
+                        )}
+                        
+                        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                            <button 
+                                onClick={this.closeLawDetailModal}
                                 style={{ 
                                     padding: '8px 15px', 
                                     backgroundColor: '#f44336', 
