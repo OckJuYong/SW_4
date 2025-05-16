@@ -81,7 +81,7 @@ class Contract extends Component {
         
         try {
             const response = await axios.post(
-                `https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/${contractId}/analyze`
+                `https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/1/analyze`
             );
             
             this.setState({ 
