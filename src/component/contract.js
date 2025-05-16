@@ -12,7 +12,10 @@ class Contract extends Component {
             showModal: false,
             selectedContract: null,
             detailLoading: false,
-            detailError: null
+            detailError: null,
+            legalAnalysis: null,
+            analysisLoading: false,
+            analysisError: null
         };
     }
 
@@ -72,12 +75,36 @@ class Contract extends Component {
         }
     }
 
+    // 법률 정보 분석 요청
+    analyzeLegalInfo = async (contractId) => {
+        this.setState({ analysisLoading: true, analysisError: null, legalAnalysis: null });
+        
+        try {
+            const response = await axios.post(
+                `https://port-0-mobicom-sw-contest-2025-umnqdut2blqqevwyb.sel4.cloudtype.app/api/contract/${contractId}/analyze`
+            );
+            
+            this.setState({ 
+                legalAnalysis: response.data, 
+                analysisLoading: false
+            });
+        } catch (error) {
+            console.error("법률 정보 분석 실패:", error);
+            this.setState({ 
+                analysisError: `법률 정보 분석 실패: ${error.message}`, 
+                analysisLoading: false
+            });
+        }
+    }
+
     // 모달 열기
     openModal = (contract) => {
         // 이미 기본 정보가 있으면 먼저 표시
         this.setState({ 
             selectedContract: contract, 
-            showModal: true 
+            showModal: true,
+            legalAnalysis: null, // 새 계약서를 볼 때 이전 분석 결과 초기화
+            analysisError: null
         });
         
         // 상세 정보 API 호출
@@ -89,7 +116,9 @@ class Contract extends Component {
         this.setState({ 
             showModal: false, 
             selectedContract: null,
-            detailError: null
+            detailError: null,
+            legalAnalysis: null,
+            analysisError: null
         });
     }
 
@@ -102,7 +131,10 @@ class Contract extends Component {
             showModal, 
             selectedContract, 
             detailLoading, 
-            detailError 
+            detailError,
+            legalAnalysis,
+            analysisLoading,
+            analysisError
         } = this.state;
 
         // 모달 스타일
@@ -124,9 +156,11 @@ class Contract extends Component {
             padding: '20px',
             border: '1px solid #888',
             width: '80%',
-            maxWidth: '800px',
+            maxWidth: '900px',
             borderRadius: '5px',
-            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)'
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            maxHeight: '80vh',
+            overflow: 'auto'
         };
 
         const closeButtonStyle = {
@@ -136,6 +170,24 @@ class Contract extends Component {
             fontWeight: 'bold',
             cursor: 'pointer'
         };
+
+        const tabStyle = {
+            overflow: 'hidden',
+            borderBottom: '1px solid #ccc',
+            marginBottom: '20px'
+        };
+
+        const tabButtonStyle = (isActive) => ({
+            background: isActive ? '#f1f1f1' : 'inherit',
+            float: 'left',
+            border: 'none',
+            outline: 'none',
+            cursor: 'pointer',
+            padding: '10px 16px',
+            fontSize: '16px',
+            borderBottom: isActive ? '2px solid #2196F3' : 'none',
+            fontWeight: isActive ? 'bold' : 'normal'
+        });
 
         return (
             <div style={{ padding: '20px' }}>
@@ -287,7 +339,142 @@ class Contract extends Component {
                                     </div>
                                 </div>
                                 
-                                {/* 여기에 API에서 반환되는 추가 정보들을 표시할 수 있습니다 */}
+                                {/* 법률 정보 분석 섹션 */}
+                                <div style={{ marginTop: '30px', borderTop: '1px solid #ddd', paddingTop: '20px' }}>
+                                    <h3>법률 정보 분석</h3>
+                                    
+                                    {!legalAnalysis && !analysisLoading && !analysisError && (
+                                        <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                                            <button 
+                                                onClick={() => this.analyzeLegalInfo(selectedContract.contractId)}
+                                                style={{ 
+                                                    padding: '8px 15px', 
+                                                    backgroundColor: '#4CAF50', 
+                                                    color: 'white', 
+                                                    border: 'none', 
+                                                    cursor: 'pointer',
+                                                    borderRadius: '4px',
+                                                    fontSize: '16px'
+                                                }}
+                                            >
+                                                법률 정보 분석하기
+                                            </button>
+                                        </div>
+                                    )}
+                                    
+                                    {analysisLoading && (
+                                        <p style={{ textAlign: 'center' }}>법률 정보 분석 중...</p>
+                                    )}
+                                    
+                                    {analysisError && (
+                                        <div style={{ color: 'red', margin: '15px 0' }}>
+                                            <p>{analysisError}</p>
+                                            <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                                                <button 
+                                                    onClick={() => this.analyzeLegalInfo(selectedContract.contractId)}
+                                                    style={{ 
+                                                        padding: '5px 10px', 
+                                                        backgroundColor: '#FF9800', 
+                                                        color: 'white', 
+                                                        border: 'none', 
+                                                        cursor: 'pointer',
+                                                        borderRadius: '4px'
+                                                    }}
+                                                >
+                                                    다시 시도
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {legalAnalysis && (
+                                        <div>
+                                            {/* 탭 메뉴 */}
+                                            <div style={tabStyle}>
+                                                <button 
+                                                    id="issuesTab" 
+                                                    style={tabButtonStyle(true)} 
+                                                    onClick={() => {
+                                                        document.getElementById('issues').style.display = 'block';
+                                                        document.getElementById('laws').style.display = 'none';
+                                                        document.getElementById('issuesTab').style.fontWeight = 'bold';
+                                                        document.getElementById('lawsTab').style.fontWeight = 'normal';
+                                                    }}
+                                                >
+                                                    검토 사항
+                                                </button>
+                                                <button 
+                                                    id="lawsTab" 
+                                                    style={tabButtonStyle(false)} 
+                                                    onClick={() => {
+                                                        document.getElementById('issues').style.display = 'none';
+                                                        document.getElementById('laws').style.display = 'block';
+                                                        document.getElementById('issuesTab').style.fontWeight = 'normal';
+                                                        document.getElementById('lawsTab').style.fontWeight = 'bold';
+                                                    }}
+                                                >
+                                                    관련 법률
+                                                </button>
+                                            </div>
+                                            
+                                            {/* 검토 사항 내용 */}
+                                            <div id="issues" style={{ display: 'block' }}>
+                                                <h4>계약서 검토 사항</h4>
+                                                {legalAnalysis.issues && legalAnalysis.issues.length > 0 ? (
+                                                    <div>
+                                                        {legalAnalysis.issues.map((issue, index) => (
+                                                            <div key={index} style={{ border: '1px solid #ddd', padding: '15px', marginBottom: '15px', borderRadius: '5px' }}>
+                                                                <h5 style={{ color: '#D32F2F', marginTop: 0 }}>검토 유형: {issue.type}</h5>
+                                                                <p><strong>사유:</strong> {issue.reason}</p>
+                                                                <p><strong>근거:</strong> {issue.evidence}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p>검토 사항이 없습니다.</p>
+                                                )}
+                                            </div>
+                                            
+                                            {/* 관련 법률 내용 */}
+                                            <div id="laws" style={{ display: 'none' }}>
+                                                <h4>관련 법률 정보</h4>
+                                                {legalAnalysis.laws && legalAnalysis.laws.length > 0 ? (
+                                                    <div>
+                                                        {legalAnalysis.laws.map((law, index) => (
+                                                            <div key={index} style={{ border: '1px solid #ddd', padding: '15px', marginBottom: '15px', borderRadius: '5px' }}>
+                                                                <h5 style={{ color: '#1976D2', marginTop: 0 }}>법률명: {law.lawName}</h5>
+                                                                {law.translatedLawName && (
+                                                                    <p><strong>번역된 법률명:</strong> {law.translatedLawName}</p>
+                                                                )}
+                                                                {law.translatedSummary && (
+                                                                    <p><strong>요약:</strong> {law.translatedSummary}</p>
+                                                                )}
+                                                                {law.referenceNumber && (
+                                                                    <p><strong>참조 번호:</strong> {law.referenceNumber}</p>
+                                                                )}
+                                                                {law.sourceLink && (
+                                                                    <p>
+                                                                        <strong>출처:</strong> 
+                                                                        <a 
+                                                                            href={law.sourceLink} 
+                                                                            target="_blank" 
+                                                                            rel="noopener noreferrer"
+                                                                            style={{ color: '#1976D2', textDecoration: 'none' }}
+                                                                        >
+                                                                            {law.sourceLink}
+                                                                        </a>
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p>관련 법률 정보가 없습니다.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                         
